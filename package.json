@@ -1,7 +1,7 @@
 {
   "name": "northsoft-mailgateway",
   "version": "1.0.0",
-  "description": "Secure transactional email gateway for NorthSoft applications built on Cloudflare Workers and Brevo",
+  "description": "Transactional email gateway for NorthSoft applications built on Cloudflare Workers and Brevo",
   "main": "src/index.ts",
   "type": "module",
   "scripts": {
@@ -22,6 +22,7 @@
     "northsoft"
   ],
   "author": "Robert Jaśkowiec (rjaskowiec)",
+  "license": "UNLICENSED",
   "private": true,
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240903.0",
