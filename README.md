@@ -52,7 +52,7 @@ Client microservices submit email requests via HTTPS to the `/v1/send` endpoint.
 - **Payload Validation**: Enforces schema limits for recipients, subject length, and content sizes.
 - **Header Injection Protection**: Rejects subject lines and email fields containing CRLF characters.
 - **HTML Sanitization**: Filters HTML content using an allowlist-based parser before forwarding.
-- **CORS Support**: Enforces origin restrictions for allowed NorthSoft web applications.
+- **CORS Support**: Enforces origin restrictions for allowed NorthSoft web applications, including development subdomains.
 - **Security Headers**: Returns standard HTTP security response headers.
 - **Provider Isolation**: Isolates third-party API details and returns standardized status codes.
 
