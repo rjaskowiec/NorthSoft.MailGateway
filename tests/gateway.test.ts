@@ -268,4 +268,30 @@ describe("End-to-End Worker Fetch Handler", () => {
     const resDenied = await worker.fetch(reqDenied, mockEnv, ctx);
     assert.strictEqual(resDenied.status, 403);
   });
+  test("OPTIONS /v1/send allows development subdomain and rejects invalid origins", async () => {
+    const devOrigin = "https://test.robert-jaskowiec.workers.dev";
+    const reqDevAllowed = new Request("https://mail.northsoft.is/v1/send", {
+      method: "OPTIONS",
+      headers: { Origin: devOrigin }
+    });
+    const resDevAllowed = await worker.fetch(reqDevAllowed, mockEnv, ctx);
+    assert.strictEqual(resDevAllowed.status, 204);
+    assert.strictEqual(resDevAllowed.headers.get("Access-Control-Allow-Origin"), devOrigin);
+
+    const badOrigins = [
+      "https://robert-jaskowiec.workers.dev",
+      "http://test.robert-jaskowiec.workers.dev",
+      "https://evil.workers.dev",
+      "https://evil.robert-jaskowiec.workers.dev.attacker.com",
+      "https://robert-jaskowiec.workers.dev.attacker.com"
+    ];
+    for (const o of badOrigins) {
+      const req = new Request("https://mail.northsoft.is/v1/send", {
+        method: "OPTIONS",
+        headers: { Origin: o }
+      });
+      const res = await worker.fetch(req, mockEnv, ctx);
+      assert.strictEqual(res.status, 403);
+    }
+  });
 });

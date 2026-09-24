@@ -16,11 +16,31 @@ export function getCorsOrigin(request: Request): string | null {
     return null;
   }
 
+  // Production whitelist
   if ((CONFIG.corsAllowedOrigins as readonly string[]).includes(origin)) {
     return origin;
   }
 
-  return null;
+  // Development wildcard: any HTTPS subdomain of robert-jaskowiec.workers.dev
+  try {
+    const url = new URL(origin);
+    if (url.protocol !== "https:") {
+      return null;
+    }
+    const hostname = url.hostname;
+    const suffix = ".robert-jaskowiec.workers.dev";
+    if (!hostname.endsWith(suffix)) {
+      return null;
+    }
+    const prefix = hostname.slice(0, -suffix.length);
+    // Ensure there is at least one subdomain label before the suffix
+    if (prefix === "" || prefix.endsWith(".")) {
+      return null;
+    }
+    return origin;
+  } catch {
+    return null;
+  }
 }
 
 export function handleOptions(request: Request): Response {
