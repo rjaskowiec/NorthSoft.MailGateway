@@ -104,7 +104,6 @@ Complete API specifications and status code mappings are documented in [docs/API
 | :--- | :--- | :--- |
 | `GATEWAY_TOKEN` | Secret | API Bearer token authentication |
 | `BREVO_API_KEY` | Secret | Brevo API key |
-| `AUTHORIZED_SENDERS` | Variable | Allowed sender email addresses |
 
 Secrets are managed using Cloudflare Worker environment secret bindings and are never stored in repository configuration files.
 

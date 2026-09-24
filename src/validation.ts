@@ -24,11 +24,11 @@ export function isValidEmail(email: string): boolean {
   return emailRegex.test(value);
 }
 
-export function parseAuthorizedSenders(value: string): string[] {
-  return value
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
+export function isAuthorizedSender(email: string): boolean {
+  if (typeof email !== "string") {
+    return false;
+  }
+  return (CONFIG.authorizedSenders as readonly string[]).includes(email.trim().toLowerCase());
 }
 
 export function validatePayload(payload: unknown): ValidationResult {

@@ -4,7 +4,7 @@ import { CONFIG } from "./config.ts";
 import { handleOptions, json } from "./response.ts";
 import { sanitizeEmailHtml } from "./sanitizer.ts";
 import type { Env, SendEmailPayload } from "./types.ts";
-import { parseAuthorizedSenders, validatePayload } from "./validation.ts";
+import { isAuthorizedSender, validatePayload } from "./validation.ts";
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -39,7 +39,7 @@ async function handleRequest(request: Request, env: Env, _ctx: ExecutionContext)
 }
 
 async function handleSend(request: Request, env: Env): Promise<Response> {
-  if (!env.GATEWAY_TOKEN || !env.BREVO_API_KEY || !env.AUTHORIZED_SENDERS) {
+  if (!env.GATEWAY_TOKEN || !env.BREVO_API_KEY) {
     console.error("Missing required environment secret bindings");
     return json({ success: false, error: "Service unavailable" }, 503, request);
   }
@@ -74,10 +74,7 @@ async function handleSend(request: Request, env: Env): Promise<Response> {
     return json({ success: false, error: validation.error }, 400, request);
   }
 
-  const authorizedSenders = parseAuthorizedSenders(env.AUTHORIZED_SENDERS);
-  const senderEmail = payload.from.email.toLowerCase();
-
-  if (!authorizedSenders.includes(senderEmail)) {
+  if (!isAuthorizedSender(payload.from.email)) {
     return json({ success: false, error: "Sender is not authorized" }, 403, request);
   }
 

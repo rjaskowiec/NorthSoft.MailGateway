@@ -10,37 +10,49 @@ export function securityHeaders(): Record<string, string> {
   };
 }
 
-export function getCorsOrigin(request: Request): string | null {
-  const origin = request.headers.get("Origin");
-  if (!origin) {
-    return null;
+export function isAllowedOrigin(origin: string): boolean {
+  if (!origin || typeof origin !== "string") {
+    return false;
   }
 
-  // Production whitelist
+  // 1. Explicit static allowed origins (e.g. http://localhost:3000)
   if ((CONFIG.corsAllowedOrigins as readonly string[]).includes(origin)) {
-    return origin;
+    return true;
   }
 
-  // Development wildcard: any HTTPS subdomain of robert-jaskowiec.workers.dev
   try {
     const url = new URL(origin);
     if (url.protocol !== "https:") {
-      return null;
+      return false;
     }
     const hostname = url.hostname;
-    const suffix = ".robert-jaskowiec.workers.dev";
-    if (!hostname.endsWith(suffix)) {
-      return null;
+
+    // 2. Allow https://northsoft.is and any HTTPS subdomain https://*.northsoft.is
+    if (hostname === "northsoft.is" || hostname.endsWith(".northsoft.is")) {
+      return true;
     }
-    const prefix = hostname.slice(0, -suffix.length);
-    // Ensure there is at least one subdomain label before the suffix
-    if (prefix === "" || prefix.endsWith(".")) {
-      return null;
+
+    // 3. Cloudflare Worker preview subdomains: https://<SUBDOMAIN>.robert-jaskowiec.workers.dev
+    const cfSuffix = ".robert-jaskowiec.workers.dev";
+    if (hostname.endsWith(cfSuffix)) {
+      const prefix = hostname.slice(0, -cfSuffix.length);
+      if (prefix && !prefix.endsWith(".")) {
+        return true;
+      }
     }
-    return origin;
+
+    return false;
   } catch {
+    return false;
+  }
+}
+
+export function getCorsOrigin(request: Request): string | null {
+  const origin = request.headers.get("Origin");
+  if (!origin || !isAllowedOrigin(origin)) {
     return null;
   }
+  return origin;
 }
 
 export function handleOptions(request: Request): Response {

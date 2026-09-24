@@ -92,7 +92,7 @@ Content-Length: <bytes>
 
 | Field Path | Type | Required | Max Length / Limit | Validation Rules |
 | :--- | :--- | :--- | :--- | :--- |
-| `from.email` | `string` | Yes | 320 chars | Valid email format. Must match `AUTHORIZED_SENDERS`. No CRLF (`\r`, `\n`). |
+| `from.email` | `string` | Yes | 320 chars | Valid email format. Must match authorized sender (`no-reply@northsoft.is`). No CRLF (`\r`, `\n`). |
 | `from.name` | `string` | No | 200 chars | Sender display name. |
 | `to` | `array` | Yes | 1 – 10 items | Array of recipient objects. |
 | `to[].email` | `string` | Yes | 320 chars | Valid email format. No CRLF. |
@@ -131,7 +131,7 @@ The gateway enforces a strict payload limit of **200 KB** (`200,000 bytes`). Req
 | `400` | `Missing html` / `HTML content is too large` | HTML body is empty or exceeds 150 KB. |
 | `400` | `Invalid HTML content` | HTML content failed sanitization check. |
 | `403` | `Forbidden` | Authorization header missing, invalid prefix, or invalid token. |
-| `403` | `Sender is not authorized` | `from.email` is not in the `AUTHORIZED_SENDERS` whitelist. |
+| `403` | `Sender is not authorized` | `from.email` is not the authorized sender (`no-reply@northsoft.is`). |
 | `405` | `Method not allowed` | Non-POST HTTP method used on `/v1/send`. |
 | `413` | `Request body too large` | Payload exceeds 200 KB maximum body size. |
 | `415` | `Content-Type must be application/json` | Missing or non-JSON `Content-Type` header. |

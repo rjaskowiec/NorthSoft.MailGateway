@@ -2,15 +2,14 @@ import assert from "node:assert";
 import { describe, test } from "node:test";
 import { extractBearerToken, secureTokenCompare } from "../src/auth.ts";
 import worker from "../src/index.ts";
-import { getCorsOrigin, json, securityHeaders } from "../src/response.ts";
+import { getCorsOrigin, isAllowedOrigin, json, securityHeaders } from "../src/response.ts";
 import { sanitizeEmailHtml } from "../src/sanitizer.ts";
 import type { Env } from "../src/types.ts";
-import { containsHeaderInjection, isValidEmail, parseAuthorizedSenders, validatePayload } from "../src/validation.ts";
+import { containsHeaderInjection, isAuthorizedSender, isValidEmail, validatePayload } from "../src/validation.ts";
 
 const mockEnv: Env = {
   GATEWAY_TOKEN: "test-gateway-token-12345",
-  BREVO_API_KEY: "test-brevo-api-key-67890",
-  AUTHORIZED_SENDERS: "no-reply@example.com,support@example.com"
+  BREVO_API_KEY: "test-brevo-api-key-67890"
 };
 
 describe("Auth Module", () => {
@@ -47,9 +46,11 @@ describe("Validation Module", () => {
     assert.strictEqual(isValidEmail("user@domain\n.com"), false);
   });
 
-  test("parseAuthorizedSenders parses comma-separated lists", () => {
-    const parsed = parseAuthorizedSenders("no-reply@example.com, SUPPORT@EXAMPLE.COM , ");
-    assert.deepStrictEqual(parsed, ["no-reply@example.com", "support@example.com"]);
+  test("isAuthorizedSender validates single code-defined sender no-reply@northsoft.is", () => {
+    assert.strictEqual(isAuthorizedSender("no-reply@northsoft.is"), true);
+    assert.strictEqual(isAuthorizedSender("NO-REPLY@NORTHSOFT.IS"), true);
+    assert.strictEqual(isAuthorizedSender("info@northsoft.is"), false);
+    assert.strictEqual(isAuthorizedSender("unauthorized@evil.com"), false);
   });
 
   test("validatePayload enforces structural payload rules", () => {
@@ -162,6 +163,37 @@ describe("Response & CORS Module", () => {
     assert.strictEqual(headers["X-Frame-Options"], "DENY");
   });
 
+  test("isAllowedOrigin validates explicit production, local dev, and preview origins", () => {
+    const passOrigins = [
+      "https://northsoft.is",
+      "https://www.northsoft.is",
+      "https://mail.northsoft.is",
+      "https://photo.northsoft.is",
+      "https://app.northsoft.is",
+      "https://anything.northsoft.is",
+      "http://localhost:3000",
+      "https://feature-mail-gateway-migration-northsoft.robert-jaskowiec.workers.dev",
+      "https://arbitrary.robert-jaskowiec.workers.dev"
+    ];
+    for (const origin of passOrigins) {
+      assert.strictEqual(isAllowedOrigin(origin), true, `Should accept valid origin: ${origin}`);
+    }
+
+    const rejectOrigins = [
+      "https://robert-jaskowiec.workers.dev",
+      "http://feature-test.robert-jaskowiec.workers.dev",
+      "https://robert-jaskowiec.workers.dev.evil.com",
+      "https://northsoft.is.evil.com",
+      "https://evil.example.com",
+      "ftp://northsoft.is",
+      "http://northsoft.is",
+      "http://sub.northsoft.is"
+    ];
+    for (const origin of rejectOrigins) {
+      assert.strictEqual(isAllowedOrigin(origin), false, `Should reject invalid origin: ${origin}`);
+    }
+  });
+
   test("getCorsOrigin verifies whitelisted origins", () => {
     const reqAllowed = new Request("https://mail.northsoft.is/v1/send", {
       headers: { Origin: "https://northsoft.is" }
@@ -244,6 +276,45 @@ describe("End-to-End Worker Fetch Handler", () => {
         to: [{ email: "user@example.com" }],
         subject: "Hello",
         html: "<p>Test</p>"
+      })
+    });
+    const res = await worker.fetch(req, mockEnv, ctx);
+    assert.strictEqual(res.status, 403);
+    const body = await res.json() as Record<string, string>;
+    assert.strictEqual(body.error, "Sender is not authorized");
+  });
+
+  test("POST /v1/send accepts valid token with no-reply@northsoft.is", async () => {
+    const req = new Request("https://mail.northsoft.is/v1/send", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer test-gateway-token-12345",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from: { email: "no-reply@northsoft.is", name: "NorthSoft" },
+        to: [{ email: "user@example.com" }],
+        subject: "Gateway Test",
+        html: "<p>Gateway Test</p>"
+      })
+    });
+    const res = await worker.fetch(req, mockEnv, ctx);
+    // Since fetch to Brevo is mocked/failed or live mock, status should be 502 (rejected by Brevo/network) rather than 403 authorization failure
+    assert.ok(res.status === 200 || res.status === 502);
+  });
+
+  test("POST /v1/send rejects non-authorized sender info@northsoft.is (403)", async () => {
+    const req = new Request("https://mail.northsoft.is/v1/send", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer test-gateway-token-12345",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from: { email: "info@northsoft.is", name: "NorthSoft Info" },
+        to: [{ email: "user@example.com" }],
+        subject: "Gateway Test Info",
+        html: "<p>Gateway Test Info</p>"
       })
     });
     const res = await worker.fetch(req, mockEnv, ctx);

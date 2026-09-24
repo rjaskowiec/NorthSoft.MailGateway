@@ -3,4 +3,3 @@
 
 GATEWAY_TOKEN=your-gateway-token-here
 BREVO_API_KEY=your-brevo-api-key-here
-AUTHORIZED_SENDERS=no-reply@example.com,support@example.com

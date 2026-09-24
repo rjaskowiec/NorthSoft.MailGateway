@@ -8,11 +8,15 @@ export const CONFIG = {
 
   brevoEndpoint: "https://api.brevo.com/v3/smtp/email",
 
+  authorizedSenders: [
+    "no-reply@northsoft.is"
+  ],
+
   corsAllowedOrigins: [
     "https://northsoft.is",
     "https://www.northsoft.is",
     "https://mail.northsoft.is",
-    "http://localhost:3000",
-    "https://photo.northsoft.is"
+    "https://photo.northsoft.is",
+    "http://localhost:3000"
   ]
 } as const;

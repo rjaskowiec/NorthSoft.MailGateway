@@ -1,7 +1,6 @@
 export interface Env {
   BREVO_API_KEY: string;
   GATEWAY_TOKEN: string;
-  AUTHORIZED_SENDERS: string;
 }
 
 export interface EmailContact {
