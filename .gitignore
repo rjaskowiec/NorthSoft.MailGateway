@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Cloudflare Wrangler local environment & build artifacts
+.wrangler/
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+
+# Environment files
+.env
+.env.*
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
